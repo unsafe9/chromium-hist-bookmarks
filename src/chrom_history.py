@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import difflib
+import glob
 import os
 import shutil
 import sqlite3
@@ -15,62 +16,204 @@ from Alfred3 import Tools as Tools
 from Favicon import Icons
 
 HISTORY_MAP = {
-    "brave": "Library/Application Support/BraveSoftware/Brave-Browser/Default/History",
-    "brave_beta": "Library/Application Support/BraveSoftware/Brave-Browser-Beta/Default/History",
-    "chromium": "Library/Application Support/Chromium/Default/History",
-    "chrome": "Library/Application Support/Google/Chrome/Default/History",
-    "opera": "Library/Application Support/com.operasoftware.Opera/History",
-    "sidekick": 'Library/Application Support/Sidekick/Default/History',
-    "vivaldi": "Library/Application Support/Vivaldi/Default/History",
-    "edge": "Library/Application Support/Microsoft Edge/Default/History",
-    "arc": "Library/Application Support/Arc/User Data/Default/History",
-    "dia": "Library/Application Support/Dia/User Data/Default/History",
-    "safari": "Library/Safari/History.db"
+    "brave": "Library/Application Support/BraveSoftware/Brave-Browser",
+    "brave_beta": "Library/Application Support/BraveSoftware/Brave-Browser-Beta",
+    "chromium": "Library/Application Support/Chromium",
+    "chrome": "Library/Application Support/Google/Chrome",
+    "opera": "Library/Application Support/com.operasoftware.Opera",
+    "sidekick": "Library/Application Support/Sidekick",
+    "vivaldi": "Library/Application Support/Vivaldi",
+    "edge": "Library/Application Support/Microsoft Edge",
+    "arc": "Library/Application Support/Arc/User Data",
+    "dia": "Library/Application Support/Dia/User Data",
+    "safari": "Library/Safari/History.db",
 }
 
 # Get Browser Histories to load per env (true/false)
 HISTORIES = list()
 for k in HISTORY_MAP.keys():
     if Tools.getEnvBool(k):
-        HISTORIES.append(HISTORY_MAP.get(k))
+        HISTORIES.append((k, HISTORY_MAP.get(k)))
 
 # Get ignored Domains settings
 d = Tools.getEnv("ignored_domains", None)
-ignored_domains = d.split(',') if d else None
+ignored_domains = d.split(",") if d else None
 
 # Show favicon in results or default wf icon
 show_favicon = Tools.getEnvBool("show_favicon")
 
 # Determine default search operator (AND/OR)
-search_operator_default = Tools.getEnv(
-    "search_operator_default", "AND").upper() != "OR"
+search_operator_default = Tools.getEnv("search_operator_default", "AND").upper() != "OR"
 
 # if set to true history entries will be sorted
 # based on recent visitied otherwise number of visits
 sort_recent = Tools.getEnvBool("sort_recent")
 
 # Date format settings
-DATE_FMT = Tools.getEnv("date_format", default='%d. %B %Y')
+DATE_FMT = Tools.getEnv("date_format", default="%d. %B %Y")
+
+
+def get_real_profile_name_from_history(browser_path: str, profile_dir: str) -> str:
+    """
+    Get real profile name from Local State file for history
+
+    Args:
+        browser_path (str): Base browser path
+        profile_dir (str): Profile directory name (Default, Profile 1, etc.)
+
+    Returns:
+        str: Real profile name or fallback to directory name
+    """
+    try:
+        local_state_path = os.path.join(browser_path, "Local State")
+        if os.path.isfile(local_state_path):
+            import json
+
+            with open(local_state_path, "r", encoding="utf-8") as f:
+                local_state = json.load(f)
+
+            profiles = local_state.get("profile", {}).get("info_cache", {})
+            if profile_dir in profiles:
+                profile_info = profiles[profile_dir]
+                real_name = profile_info.get("user_name", profile_dir)
+                return real_name
+    except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
+        Tools.log(f"Error reading Local State: {e}")
+
+    # Fallback to directory name
+    return profile_dir
+
+
+def get_profile_icon_path_from_history(browser_path: str, profile_dir: str) -> str:
+    """
+    Get profile icon file path from Local State for history
+
+    Args:
+        browser_path (str): Base browser path
+        profile_dir (str): Profile directory name (Default, Profile 1, etc.)
+
+    Returns:
+        str: Profile icon file path or None if not found
+    """
+    try:
+        local_state_path = os.path.join(browser_path, "Local State")
+        if os.path.isfile(local_state_path):
+            import json
+
+            with open(local_state_path, "r", encoding="utf-8") as f:
+                local_state = json.load(f)
+
+            profiles = local_state.get("profile", {}).get("info_cache", {})
+            if profile_dir in profiles:
+                profile_info = profiles[profile_dir]
+                picture_filename = profile_info.get("gaia_picture_file_name")
+                if picture_filename:
+                    # Profile pictures are stored in the profile directory
+                    profile_picture_path = os.path.join(
+                        browser_path, profile_dir, picture_filename
+                    )
+                    if os.path.isfile(profile_picture_path):
+                        return profile_picture_path
+    except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
+        Tools.log(f"Error reading profile icon: {e}")
+
+    return None
+
+
+def get_profile_name_from_history(path: str) -> str:
+    """
+    Extract profile name from history path
+
+    Args:
+        path (str): Full path to history file
+
+    Returns:
+        str: Profile name
+    """
+    if "Default" in path:
+        return "Default"
+    elif "Profile" in path:
+        return os.path.basename(os.path.dirname(path))
+    else:
+        return "Safari"
 
 
 def history_paths() -> list:
     """
-    Get valid pathes to history from HISTORIES variable
+    Get valid paths to history from HISTORIES variable (all profiles)
 
     Returns:
-        list: available paths of history files
+        list: available paths of history files with browser, profile info, and icon path
     """
     user_dir = os.path.expanduser("~")
-    hists = [os.path.join(user_dir, h) for h in HISTORIES]
-
     valid_hists = list()
-    # write log if history db was found or not
-    for h in hists:
-        if os.path.isfile(h):
-            valid_hists.append(h)
-            Tools.log(f"{h} → found")
+
+    for browser_name, browser_path in HISTORIES:
+        if browser_name == "safari":
+            # Safari has only one history file
+            full_path = os.path.join(user_dir, browser_path)
+            if os.path.isfile(full_path):
+                valid_hists.append((browser_name, "Safari", full_path, None))
+                Tools.log(f"{full_path} → found (Safari)")
+            else:
+                Tools.log(f"{full_path} → NOT found (Safari)")
         else:
-            Tools.log(f"{h} → NOT found")
+            # Chromium-based browsers - check all profiles
+            base_path = os.path.join(user_dir, browser_path)
+            if os.path.isdir(base_path):
+                # Look for Default and Profile* directories
+                profile_patterns = ["Default", "Profile*"]
+                for pattern in profile_patterns:
+                    profile_dirs = glob.glob(os.path.join(base_path, pattern))
+                    for profile_dir in profile_dirs:
+                        if os.path.isdir(profile_dir):
+                            history_file = os.path.join(profile_dir, "History")
+                            if os.path.isfile(history_file):
+                                profile_dir_name = os.path.basename(profile_dir)
+                                # Get real profile name and icon for supported browsers
+                                if browser_name in [
+                                    "edge",
+                                    "chrome",
+                                    "chromium",
+                                    "brave",
+                                    "brave_beta",
+                                    "opera",
+                                    "sidekick",
+                                    "vivaldi",
+                                    "arc",
+                                    "dia",
+                                ]:
+                                    profile_name = get_real_profile_name_from_history(
+                                        base_path, profile_dir_name
+                                    )
+                                    profile_icon_path = (
+                                        get_profile_icon_path_from_history(
+                                            base_path, profile_dir_name
+                                        )
+                                    )
+                                else:
+                                    profile_name = get_profile_name_from_history(
+                                        history_file
+                                    )
+                                    profile_icon_path = None
+                                valid_hists.append(
+                                    (
+                                        browser_name,
+                                        profile_name,
+                                        history_file,
+                                        profile_icon_path,
+                                    )
+                                )
+                                Tools.log(
+                                    f"{history_file} → found ({browser_name} - {profile_name})"
+                                )
+                            else:
+                                Tools.log(
+                                    f"{history_file} → NOT found ({browser_name} - {profile_dir_name})"
+                                )
+            else:
+                Tools.log(f"{base_path} → NOT found ({browser_name})")
+
     return valid_hists
 
 
@@ -79,7 +222,7 @@ def get_histories(dbs: list, query: str) -> list:
     Load History files into list
 
     Args:
-        dbs(list): list with valid history paths
+        dbs(list): list with valid history paths with browser and profile info
 
     Returns:
         list: filters history entries
@@ -87,21 +230,22 @@ def get_histories(dbs: list, query: str) -> list:
 
     results = list()
     with Pool(len(dbs)) as p:  # Exec in ThreadPool
-        results = p.map(sql, [db for db in dbs])
+        results = p.map(sql_with_profile, dbs)
     matches = []
     for r in results:
         matches = matches + r
-    results = search_in_tuples(matches, query)
+    results = search_in_tuples_with_profile(matches, query)
     # Remove duplicate Entries
     results = removeDuplicates(results)
-    # evmove ignored domains
+    # remove ignored domains
     if ignored_domains:
         results = remove_ignored_domains(results, ignored_domains)
-    # Reduce search results to 30
+    # Sort by element FIRST (before limiting results)
+    # For 7-element tuples: (url, title, visit_count, last_visit, browser, profile, icon_path)
+    sort_by = 3 if sort_recent else 2  # last_visit or visit_count
+    results = Tools.sortListTuple(results, sort_by)  # Sort based on visits or recent
+    # Reduce search results to 30 AFTER sorting
     results = results[:30]
-    # Sort by element. Element 2=visited, 3=recent
-    sort_by = 3 if sort_recent else 2
-    results = Tools.sortListTuple(results, sort_by)  # Sort based on visits
     return results
 
 
@@ -178,6 +322,33 @@ def sql(db: str) -> list:
     return res
 
 
+def sql_with_profile(db_info: tuple) -> list:
+    """
+    Executes SQL with profile information
+
+    Args:
+        db_info (tuple): (browser_name, profile_name, db_path, profile_icon_path)
+
+    Returns:
+        list: result list with browser, profile info, and icon path added
+    """
+    browser_name, profile_name, db_path, profile_icon_path = db_info
+    results = sql(db_path)
+    # Add browser, profile info, and icon path to each result
+    return [
+        (
+            url,
+            title,
+            visit_count,
+            last_visit,
+            browser_name,
+            profile_name,
+            profile_icon_path,
+        )
+        for url, title, visit_count, last_visit in results
+    ]
+
+
 def get_search_terms(search: str) -> tuple:
     """
     Explode search term string - now defaults to AND for multiple words
@@ -211,7 +382,20 @@ def removeDuplicates(li: list) -> list:
     Returns:
         list: filtered history entries
     """
-    unique_entries = {b: (a, b, c, d) for a, b, c, d in li}
+    if not li:
+        return []
+
+    # Check if entries have profile info with icon (7 elements), profile info (6 elements), or not (4 elements)
+    if len(li[0]) == 7:
+        # With profile info and icon: (url, title, visit_count, last_visit, browser, profile, icon_path)
+        unique_entries = {(a, b): (a, b, c, d, e, f, g) for a, b, c, d, e, f, g in li}
+    elif len(li[0]) == 6:
+        # With profile info: (url, title, visit_count, last_visit, browser, profile)
+        unique_entries = {(a, b): (a, b, c, d, e, f) for a, b, c, d, e, f in li}
+    else:
+        # Without profile info: (url, title, visit_count, last_visit)
+        unique_entries = {b: (a, b, c, d) for a, b, c, d in li}
+
     return list(unique_entries.values())
 
 
@@ -259,7 +443,52 @@ def search_in_tuples(tuples: list, search: str) -> list:
     return result
 
 
-def formatTimeStamp(time_ms: int, fmt: str = '%d. %B %Y') -> str:
+def search_in_tuples_with_profile(tuples: list, search: str) -> list:
+    """
+    Search for search term in list of tuples with profile info
+
+    Args:
+        tuples(list): List contains tuple to search (url, title, visit_count, last_visit, browser, profile)
+        search(str): Search string (multiple words default to AND)
+
+    Returns:
+        list: tuple list with result of query string
+    """
+
+    def is_in_tuple_with_profile(tple: tuple, st: str) -> bool:
+        match = False
+        # Search only in url and title (first 2 elements)
+        for e in tple[:2]:
+            if st.lower() in str(e).lower():
+                match = True
+        return match
+
+    search_terms = get_search_terms(search)
+    result = list()
+
+    for t in tuples:
+        # Check for explicit OR operator
+        if "|" in search:
+            # OR search: any term can match
+            if any([is_in_tuple_with_profile(t, ts) for ts in search_terms]):
+                result.append(t)
+        elif "&" in search:
+            # AND search via &
+            if all([is_in_tuple_with_profile(t, ts) for ts in search_terms]):
+                result.append(t)
+        else:
+            # Default behavior based on setting
+            if search_operator_default:
+                if all([is_in_tuple_with_profile(t, ts) for ts in search_terms]):
+                    result.append(t)
+            else:
+                if any([is_in_tuple_with_profile(t, ts) for ts in search_terms]):
+                    result.append(t)
+
+    return result
+
+
+def formatTimeStamp(time_ms: int, fmt: str = "%d. %B %Y") -> str:
     """
     Time Stamp (ms) into formatted date string
 
@@ -283,7 +512,7 @@ def main():
     wf_data_dir = Tools.getDataDir()
     # Check and write python version
     Tools.log(f"Cache Dir: {wf_cache_dir}")
-    Tools.log(f'Data Dir: {wf_data_dir}')
+    Tools.log(f"Data Dir: {wf_data_dir}")
     Tools.log("PYTHON VERSION:", sys.version)
     if sys.version_info < (3, 7):
         Tools.log("Python version 3.7.0 or higher required!")
@@ -298,7 +527,7 @@ def main():
         wf.setItem(
             title="Browser History not found!",
             subtitle="Ensure Browser is installed or choose available browser(s) in CONFIGURE WORKFLOW",
-            valid=False
+            valid=False,
         )
         wf.addItem()
         wf.write()
@@ -313,35 +542,39 @@ def main():
     if len(results) > 0:
         # Cache Favicons
         if show_favicon:
-            ico = Icons(results)
+            # Convert to format expected by Icons class
+            ico_results = [(i[0], i[1]) for i in results]
+            ico = Icons(ico_results)
         for i in results:
             url = i[0]
-            title = i[1] if i[1] else url.split('/')[2]
+            title = i[1] if i[1] else url.split("/")[2]
             visits = i[2]
             last_visit = formatTimeStamp(i[3], fmt=DATE_FMT)
-            wf.setItem(
-                title=title,
-                subtitle=f"Last visit: {last_visit}(Visits: {visits})",
-                arg=url,
-                quicklookurl=url
-            )
+
+            # Check if we have profile info
+            if len(i) >= 6:
+                browser_name = i[4]
+                profile_name = i[5]
+                profile_icon_path = i[6] if len(i) > 6 else None
+                subtitle = f"Last visit: {last_visit} (Visits: {visits})"
+            else:
+                profile_icon_path = None
+                subtitle = f"Last visit: {last_visit} (Visits: {visits})"
+
+            wf.setItem(title=title, subtitle=subtitle, arg=url, quicklookurl=url)
             if show_favicon:
                 favicon = ico.get_favion_path(url)
                 if favicon:
-                    wf.setIcon(
-                        favicon,
-                        "image"
-                    )
-            wf.addMod(
-                key='cmd',
-                subtitle="Other Actions...",
-                arg=url
-            )
-            wf.addMod(
-                key="alt",
-                subtitle=url,
-                arg=url
-            )
+                    wf.setIcon(favicon, "image")
+            else:
+                # Use profile icon file when favicon is disabled
+                if profile_icon_path and os.path.isfile(profile_icon_path):
+                    wf.setIcon(profile_icon_path, "image")
+                else:
+                    # Fallback to default icon
+                    wf.setIcon("icon.png")
+            wf.addMod(key="cmd", subtitle="Other Actions...", arg=url)
+            wf.addMod(key="alt", subtitle=url, arg=url)
             wf.addItem()
     if wf.getItemsLengths() == 0:
         wf.setItem(
