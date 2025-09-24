@@ -4,8 +4,6 @@
 <dict>
 	<key>bundleid</key>
 	<string>com.apple.alfred.workflow.chromium-hist</string>
-	<key>category</key>
-	<string>Internet</string>
 	<key>connections</key>
 	<dict>
 		<key>6F7CBD9B-C876-48E2-B00E-92F71C1609A5</key>
@@ -51,6 +49,29 @@
 				<string>D09358D1-C880-4E62-837E-6648A334152E</string>
 				<key>modifiers</key>
 				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>BT123456-1234-1234-1234-123456789ABC</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>SWITCH-TAB-1234-5678-9ABC-DEF123456789</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>AB2E1AB4-C5C4-4FBD-BE75-E0A8F8405D39</string>
+				<key>modifiers</key>
+				<integer>1048576</integer>
 				<key>modifiersubtext</key>
 				<string></string>
 				<key>vitoclose</key>
@@ -162,13 +183,62 @@
 	<key>createdby</key>
 	<string>Acidham</string>
 	<key>description</key>
-	<string>Search in Browser History and Bookmarks</string>
+	<string>Search in Browser History, Bookmarks, and Open Tabs</string>
 	<key>disabled</key>
 	<false/>
 	<key>name</key>
-	<string>Chromium Bookmarks and History Search</string>
+	<string>Browser History, Bookmarks and Tabs Search</string>
 	<key>objects</key>
 	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<false/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>{var:tabs_keyword}</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>1</integer>
+				<key>queuemode</key>
+				<integer>2</integer>
+				<key>runningsubtext</key>
+				<string>Searching tabs, please wait...</string>
+				<key>script</key>
+				<string>./py3.sh chrom_tabs.py "$1"</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>chrom_tabs.py</string>
+				<key>subtext</key>
+				<string>Search in Browser Tabs</string>
+				<key>title</key>
+				<string>Browser Tabs Search</string>
+				<key>type</key>
+				<integer>0</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>BT123456-1234-1234-1234-123456789ABC</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
 		<dict>
 			<key>config</key>
 			<dict>
@@ -189,6 +259,72 @@
 			<string>0899A9C0-908D-4A32-9061-8DC000FAC6E2</string>
 			<key>version</key>
 			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>./py3.sh switch_tab.py "$1"</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>5</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>SWITCH-TAB-1234-5678-9ABC-DEF123456789</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argument</key>
+				<string></string>
+				<key>passthroughargument</key>
+				<false/>
+				<key>variables</key>
+				<dict>
+					<key>url</key>
+					<string>{query}</string>
+				</dict>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.argument</string>
+			<key>uid</key>
+			<string>ED77BD38-D63C-42CD-BEB6-6E3F454781C9</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>./py3.sh domain.py $1</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>5</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>C8B5C9B5-DF95-428D-A2CB-4DFFD4773165</string>
+			<key>version</key>
+			<integer>2</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -243,66 +379,6 @@
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>argument</key>
-				<string></string>
-				<key>passthroughargument</key>
-				<false/>
-				<key>variables</key>
-				<dict>
-					<key>url</key>
-					<string>{query}</string>
-				</dict>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.utility.argument</string>
-			<key>uid</key>
-			<string>ED77BD38-D63C-42CD-BEB6-6E3F454781C9</string>
-			<key>version</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>concurrently</key>
-				<false/>
-				<key>escaping</key>
-				<integer>102</integer>
-				<key>script</key>
-				<string>./py3.sh domain.py $1</string>
-				<key>scriptargtype</key>
-				<integer>1</integer>
-				<key>scriptfile</key>
-				<string></string>
-				<key>type</key>
-				<integer>5</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.action.script</string>
-			<key>uid</key>
-			<string>C8B5C9B5-DF95-428D-A2CB-4DFFD4773165</string>
-			<key>version</key>
-			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>jumpto</key>
-				<string>alfred.action.url.openin</string>
-				<key>path</key>
-				<string>{var:url}</string>
-				<key>type</key>
-				<integer>2</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.action.actioninalfred</string>
-			<key>uid</key>
-			<string>27EF6551-081A-4BF3-AE2C-3279905CA7FA</string>
-			<key>version</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>alfredfiltersresults</key>
 				<false/>
 				<key>alfredfiltersresultsmatchmode</key>
@@ -346,6 +422,23 @@
 			<string>D09358D1-C880-4E62-837E-6648A334152E</string>
 			<key>version</key>
 			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>jumpto</key>
+				<string>alfred.action.url.openin</string>
+				<key>path</key>
+				<string>{var:url}</string>
+				<key>type</key>
+				<integer>2</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.actioninalfred</string>
+			<key>uid</key>
+			<string>27EF6551-081A-4BF3-AE2C-3279905CA7FA</string>
+			<key>version</key>
+			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -430,6 +523,25 @@
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>autopaste</key>
+				<false/>
+				<key>clipboardtext</key>
+				<string>{var:url}</string>
+				<key>ignoredynamicplaceholders</key>
+				<false/>
+				<key>transient</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.clipboard</string>
+			<key>uid</key>
+			<string>6F7CBD9B-C876-48E2-B00E-92F71C1609A5</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>lastpathcomponent</key>
 				<false/>
 				<key>onlyshowifquerypopulated</key>
@@ -497,30 +609,11 @@
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>autopaste</key>
-				<false/>
-				<key>clipboardtext</key>
-				<string>{var:url}</string>
-				<key>ignoredynamicplaceholders</key>
-				<false/>
-				<key>transient</key>
-				<false/>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.output.clipboard</string>
-			<key>uid</key>
-			<string>6F7CBD9B-C876-48E2-B00E-92F71C1609A5</string>
-			<key>version</key>
-			<integer>3</integer>
-		</dict>
 	</array>
 	<key>readme</key>
-	<string># Browser History and Bookmarks Search
+	<string># Browser History, Bookmarks and Tabs Search
 
-The Workflow searches History and Bookmarks of the configured Browsers simulatiously. 
+The Workflow searches History, Bookmarks and Open Tabs of the configured Browsers simultaneously. 
 
 ## Supported Browsers
 
@@ -542,13 +635,19 @@ The Workflow searches History and Bookmarks of the configured Browsers simulatio
 
 ## Usage
 
-### Bookmarks Search
+### Search Options
 
-Search History and Bookmarks:    
+- **History Search**: Use `bh` keyword to search browser history
+- **Bookmarks Search**: Use `bm` keyword to search bookmarks  
+- **Browser Tabs Search**: Use `bt` keyword to search currently open browser tabs
+
 Type `&amp;` in between of the search terms to search for multiple entries e.g.: 
  `Car&amp;Bike` match entries with `Car or Bike rental` but NOT `Car driving school`
 You can setup search operator default to change behaviour
 
+### Browser Tabs
+
+The tabs search feature uses AppleScript to get information about currently open tabs from supported browsers. Make sure to grant necessary permissions when prompted.
 
 ### Other Actions
 
@@ -592,7 +691,7 @@ Pressing `CMD` to enter `Other Actions...`:
 			<key>xpos</key>
 			<real>30</real>
 			<key>ypos</key>
-			<real>50</real>
+			<real>165</real>
 		</dict>
 		<key>AB2E1AB4-C5C4-4FBD-BE75-E0A8F8405D39</key>
 		<dict>
@@ -600,6 +699,13 @@ Pressing `CMD` to enter `Other Actions...`:
 			<real>310</real>
 			<key>ypos</key>
 			<real>220</real>
+		</dict>
+		<key>BT123456-1234-1234-1234-123456789ABC</key>
+		<dict>
+			<key>xpos</key>
+			<real>30</real>
+			<key>ypos</key>
+			<real>15</real>
 		</dict>
 		<key>C8B5C9B5-DF95-428D-A2CB-4DFFD4773165</key>
 		<dict>
@@ -659,6 +765,27 @@ Pressing `CMD` to enter `Other Actions...`:
 			<string>textfield</string>
 			<key>variable</key>
 			<string>history_keyword</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>bt</string>
+				<key>placeholder</key>
+				<string></string>
+				<key>required</key>
+				<false/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string></string>
+			<key>label</key>
+			<string>Browser tabs search keyword</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>tabs_keyword</string>
 		</dict>
 		<dict>
 			<key>config</key>
