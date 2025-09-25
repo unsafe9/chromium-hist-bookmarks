@@ -179,6 +179,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>BP123456-1234-1234-1234-123456789ABC</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>SWITCH-PROFILE-1234-5678-9ABC-DEF123456789</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 	</dict>
 	<key>createdby</key>
 	<string>Acidham</string>
@@ -609,6 +622,78 @@
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<false/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>{var:profile_keyword}</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>1</integer>
+				<key>queuemode</key>
+				<integer>2</integer>
+				<key>runningsubtext</key>
+				<string>Searching profiles...</string>
+				<key>script</key>
+				<string>./py3.sh chrom_profiles.py "$1"</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>chrom_profiles.py</string>
+				<key>subtext</key>
+				<string>Switch Browser Profiles</string>
+				<key>title</key>
+				<string>Browser Profile Switch</string>
+				<key>type</key>
+				<integer>0</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>BP123456-1234-1234-1234-123456789ABC</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>./py3.sh switch_profile.py "$1"</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>5</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>SWITCH-PROFILE-1234-5678-9ABC-DEF123456789</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
 	</array>
 	<key>readme</key>
 	<string># Browser History, Bookmarks and Tabs Search
@@ -640,6 +725,7 @@ The Workflow searches History, Bookmarks and Open Tabs of the configured Browser
 - **History Search**: Use `bh` keyword to search browser history
 - **Bookmarks Search**: Use `bm` keyword to search bookmarks  
 - **Browser Tabs Search**: Use `bt` keyword to search currently open browser tabs
+- **Browser Profile Switch**: Use `bp` keyword to list and switch between browser profiles
 
 Type `&amp;` in between of the search terms to search for multiple entries e.g.: 
  `Car&amp;Bike` match entries with `Car or Bike rental` but NOT `Car driving school`
@@ -742,6 +828,20 @@ Pressing `CMD` to enter `Other Actions...`:
 			<key>ypos</key>
 			<real>195</real>
 		</dict>
+		<key>BP123456-1234-1234-1234-123456789ABC</key>
+		<dict>
+			<key>xpos</key>
+			<real>30</real>
+			<key>ypos</key>
+			<real>450</real>
+		</dict>
+		<key>SWITCH-PROFILE-1234-5678-9ABC-DEF123456789</key>
+		<dict>
+			<key>xpos</key>
+			<real>200</real>
+			<key>ypos</key>
+			<real>450</real>
+		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
 	<array>
@@ -807,6 +907,27 @@ Pressing `CMD` to enter `Other Actions...`:
 			<string>textfield</string>
 			<key>variable</key>
 			<string>bookmark_keyword</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>bp</string>
+				<key>placeholder</key>
+				<string></string>
+				<key>required</key>
+				<false/>
+				<key>trim</key>
+				<true/>
+			</dict>
+			<key>description</key>
+			<string></string>
+			<key>label</key>
+			<string>Browser profile switch keyword</string>
+			<key>type</key>
+			<string>textfield</string>
+			<key>variable</key>
+			<string>profile_keyword</string>
 		</dict>
 		<dict>
 			<key>config</key>
