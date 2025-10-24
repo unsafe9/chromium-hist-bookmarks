@@ -9,7 +9,13 @@ and a color background when no custom profile image is available.
 
 import hashlib
 import os
-from PIL import Image, ImageDraw, ImageFont
+
+# Try to import PIL, but make it optional
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 
 def get_color_from_name(name: str) -> tuple:
@@ -43,8 +49,11 @@ def generate_avatar(name: str, output_path: str, size: int = 256) -> str:
         size (int): Size of the avatar image in pixels (default 256)
 
     Returns:
-        str: Path to the generated avatar image
+        str: Path to the generated avatar image, or None if PIL is not available
     """
+    if not PIL_AVAILABLE:
+        return None
+
     # Create image with transparent background
     img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
@@ -119,14 +128,19 @@ def get_or_create_avatar(profile_name: str, profile_dir: str, cache_dir: str) ->
         cache_dir (str): Directory to cache generated avatars
 
     Returns:
-        str: Path to the avatar image
+        str: Path to the avatar image, or None if PIL is not available or generation fails
     """
+    if not PIL_AVAILABLE:
+        return None
+
     # Create a safe filename from profile_dir
     safe_name = profile_dir.replace(" ", "_").replace("/", "_")
     avatar_path = os.path.join(cache_dir, f"avatar_{safe_name}.png")
 
     # Generate avatar if it doesn't exist
     if not os.path.exists(avatar_path):
-        generate_avatar(profile_name, avatar_path)
+        result = generate_avatar(profile_name, avatar_path)
+        if result is None:
+            return None
 
-    return avatar_path
+    return avatar_path if os.path.exists(avatar_path) else None
