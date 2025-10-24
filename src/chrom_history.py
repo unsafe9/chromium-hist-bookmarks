@@ -14,26 +14,16 @@ from unicodedata import normalize
 from Alfred3 import Items as Items
 from Alfred3 import Tools as Tools
 from Favicon import Icons
-
-HISTORY_MAP = {
-    "brave": "Library/Application Support/BraveSoftware/Brave-Browser",
-    "brave_beta": "Library/Application Support/BraveSoftware/Brave-Browser-Beta",
-    "chromium": "Library/Application Support/Chromium",
-    "chrome": "Library/Application Support/Google/Chrome",
-    "opera": "Library/Application Support/com.operasoftware.Opera",
-    "sidekick": "Library/Application Support/Sidekick",
-    "vivaldi": "Library/Application Support/Vivaldi",
-    "edge": "Library/Application Support/Microsoft Edge",
-    "arc": "Library/Application Support/Arc/User Data",
-    "dia": "Library/Application Support/Dia/User Data",
-    "safari": "Library/Safari/History.db",
-}
+from browsers import get_enabled_browsers, HISTORY_MAP
 
 # Get Browser Histories to load per env (true/false)
-HISTORIES = list()
-for k in HISTORY_MAP.keys():
-    if Tools.getEnvBool(k):
-        HISTORIES.append((k, HISTORY_MAP.get(k)))
+HISTORIES = [
+    (
+        browser_key,
+        config.data_path if config.is_chromium_based else HISTORY_MAP[browser_key],
+    )
+    for browser_key, config in get_enabled_browsers(Tools.getEnvBool)
+]
 
 # Get ignored Domains settings
 d = Tools.getEnv("ignored_domains", None)
