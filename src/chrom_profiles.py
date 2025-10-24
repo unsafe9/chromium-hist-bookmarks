@@ -30,7 +30,8 @@ def get_chromium_profiles(browser_path: str) -> List[Tuple[str, str, str]]:
             profile_info_cache = local_state.get("profile", {}).get("info_cache", {})
 
             for profile_dir, profile_data in profile_info_cache.items():
-                real_name = profile_data.get("user_name", profile_dir)
+                # Try 'name' field first, then 'user_name' - different Chromium browsers use different fields
+                real_name = profile_data.get("name") or profile_data.get("user_name") or profile_dir
 
                 # Get profile icon path
                 icon_path = None

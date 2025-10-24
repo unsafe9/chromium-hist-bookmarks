@@ -35,7 +35,8 @@ def get_real_profile_name(browser_path: str, profile_dir: str) -> str:
             profiles = local_state.get("profile", {}).get("info_cache", {})
             if profile_dir in profiles:
                 profile_info = profiles[profile_dir]
-                real_name = profile_info.get("user_name", profile_dir)
+                # Try 'name' field first, then 'user_name' - different Chromium browsers use different fields
+                real_name = profile_info.get("name") or profile_info.get("user_name") or profile_dir
                 return real_name
     except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
         Tools.log(f"Error reading Local State: {e}")
