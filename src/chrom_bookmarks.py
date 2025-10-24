@@ -11,22 +11,7 @@ from typing import Union
 from Alfred3 import Items as Items
 from Alfred3 import Tools as Tools
 from Favicon import Icons
-
-# Bookmark file path relative to HOME
-
-BOOKMARKS_MAP = {
-    "brave": "Library/Application Support/BraveSoftware/Brave-Browser",
-    "brave_beta": "Library/Application Support/BraveSoftware/Brave-Browser-Beta",
-    "chrome": "Library/Application Support/Google/Chrome",
-    "chromium": "Library/Application Support/Chromium",
-    "opera": "Library/Application Support/com.operasoftware.Opera",
-    "sidekick": "Library/Application Support/Sidekick",
-    "vivaldi": "Library/Application Support/Vivaldi",
-    "edge": "Library/Application Support/Microsoft Edge",
-    "arc": "Library/Application Support/Arc/User Data",
-    "dia": "Library/Application Support/Dia/User Data",
-    "safari": "Library/Safari/Bookmarks.plist",
-}
+from browsers import get_enabled_browsers, BOOKMARKS_MAP
 
 
 # Show favicon in results or default wf icon
@@ -35,11 +20,13 @@ show_favicon = Tools.getEnvBool("show_favicon")
 # Determine default search operator (AND/OR)
 search_operator_default = Tools.getEnv("search_operator_default", "AND").upper() != "OR"
 
-BOOKMARKS = list()
-# Get Browser Histories to load based on user configuration
-for k in BOOKMARKS_MAP.keys():
-    if Tools.getEnvBool(k):
-        BOOKMARKS.append((k, BOOKMARKS_MAP.get(k)))
+BOOKMARKS = [
+    (
+        browser_key,
+        config.data_path if config.is_chromium_based else BOOKMARKS_MAP[browser_key],
+    )
+    for browser_key, config in get_enabled_browsers(Tools.getEnvBool)
+]
 
 
 def removeDuplicates(li: list) -> list:
