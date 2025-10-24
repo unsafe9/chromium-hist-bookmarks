@@ -8,6 +8,7 @@ from typing import List, Tuple
 
 from Alfred3 import Items as Items
 from Alfred3 import Tools as Tools
+from avatar_generator import get_or_create_avatar
 
 
 def get_chromium_profiles(browser_path: str) -> List[Tuple[str, str, str]]:
@@ -42,6 +43,11 @@ def get_chromium_profiles(browser_path: str) -> List[Tuple[str, str, str]]:
                     )
                     if os.path.isfile(profile_picture_path):
                         icon_path = profile_picture_path
+
+                # Generate avatar if no profile picture
+                if not icon_path and real_name:
+                    cache_dir = Tools.getCacheDir()
+                    icon_path = get_or_create_avatar(real_name, profile_dir, cache_dir)
 
                 profiles.append((profile_dir, real_name, icon_path))
 

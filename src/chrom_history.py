@@ -15,6 +15,7 @@ from Alfred3 import Items as Items
 from Alfred3 import Tools as Tools
 from Favicon import Icons
 from browsers import get_enabled_browsers, HISTORY_MAP
+from avatar_generator import get_or_create_avatar
 
 # Get Browser Histories to load per env (true/false)
 HISTORIES = [
@@ -75,13 +76,14 @@ def get_real_profile_name_from_history(browser_path: str, profile_dir: str) -> s
     return profile_dir
 
 
-def get_profile_icon_path_from_history(browser_path: str, profile_dir: str) -> str:
+def get_profile_icon_path_from_history(browser_path: str, profile_dir: str, profile_name: str = None) -> str:
     """
-    Get profile icon file path from Local State for history
+    Get profile icon file path from Local State for history, or generate an avatar
 
     Args:
         browser_path (str): Base browser path
         profile_dir (str): Profile directory name (Default, Profile 1, etc.)
+        profile_name (str): Profile display name (used for avatar generation)
 
     Returns:
         str: Profile icon file path or None if not found
@@ -105,6 +107,12 @@ def get_profile_icon_path_from_history(browser_path: str, profile_dir: str) -> s
                     )
                     if os.path.isfile(profile_picture_path):
                         return profile_picture_path
+
+                # No profile picture found, generate an avatar
+                if profile_name:
+                    cache_dir = Tools.getCacheDir()
+                    avatar_path = get_or_create_avatar(profile_name, profile_dir, cache_dir)
+                    return avatar_path
     except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
         Tools.log(f"Error reading profile icon: {e}")
 
@@ -180,7 +188,7 @@ def history_paths() -> list:
                                     )
                                     profile_icon_path = (
                                         get_profile_icon_path_from_history(
-                                            base_path, profile_dir_name
+                                            base_path, profile_dir_name, profile_name
                                         )
                                     )
                                 else:
