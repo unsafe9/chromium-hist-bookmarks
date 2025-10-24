@@ -12,6 +12,7 @@ The Workflow searches History and Bookmarks of the configured Browsers simulatio
 - Opera
 - Sidekick
 - Arc
+- Comet
 - Safari
 
 ## Requires

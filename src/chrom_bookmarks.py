@@ -12,6 +12,7 @@ from Alfred3 import Items as Items
 from Alfred3 import Tools as Tools
 from Favicon import Icons
 from browsers import get_enabled_browsers, BOOKMARKS_MAP
+from avatar_generator import get_or_create_avatar
 
 
 # Show favicon in results or default wf icon
@@ -95,7 +96,8 @@ def get_real_profile_name(browser_path: str, profile_dir: str) -> str:
             profiles = local_state.get("profile", {}).get("info_cache", {})
             if profile_dir in profiles:
                 profile_info = profiles[profile_dir]
-                real_name = profile_info.get("user_name", profile_dir)
+                # Try 'name' field first, then 'user_name' - different Chromium browsers use different fields
+                real_name = profile_info.get("name") or profile_info.get("user_name") or profile_dir
                 return real_name
     except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
         Tools.log(f"Error reading Local State: {e}")
@@ -104,13 +106,14 @@ def get_real_profile_name(browser_path: str, profile_dir: str) -> str:
     return profile_dir
 
 
-def get_profile_icon_path(browser_path: str, profile_dir: str) -> str:
+def get_profile_icon_path(browser_path: str, profile_dir: str, profile_name: str = None) -> str:
     """
-    Get profile icon file path from Local State
+    Get profile icon file path from Local State, or generate an avatar
 
     Args:
         browser_path (str): Base browser path
         profile_dir (str): Profile directory name (Default, Profile 1, etc.)
+        profile_name (str): Profile display name (used for avatar generation)
 
     Returns:
         str: Profile icon file path or None if not found
@@ -132,6 +135,12 @@ def get_profile_icon_path(browser_path: str, profile_dir: str) -> str:
                     )
                     if os.path.isfile(profile_picture_path):
                         return profile_picture_path
+
+                # No profile picture found, generate an avatar
+                if profile_name:
+                    cache_dir = Tools.getCacheDir()
+                    avatar_path = get_or_create_avatar(profile_name, profile_dir, cache_dir)
+                    return avatar_path
     except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
         Tools.log(f"Error reading profile icon: {e}")
 
@@ -200,12 +209,13 @@ def paths_to_bookmarks() -> list:
                                     "vivaldi",
                                     "arc",
                                     "dia",
+                                    "comet",
                                 ]:
                                     profile_name = get_real_profile_name(
                                         base_path, profile_dir_name
                                     )
                                     profile_icon_path = get_profile_icon_path(
-                                        base_path, profile_dir_name
+                                        base_path, profile_dir_name, profile_name
                                     )
                                 else:
                                     profile_name = get_profile_name(bookmark_file)

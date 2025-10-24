@@ -102,6 +102,12 @@ CHROMIUM_BROWSERS = {
         app_name="Dia",
         data_path="Library/Application Support/Dia/User Data",
     ),
+    "comet": BrowserConfig(
+        env_key="comet",
+        display_name="Comet",
+        app_name="Comet",
+        data_path="Library/Application Support/Comet",
+    ),
 }
 
 # Non-Chromium browsers

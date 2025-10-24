@@ -8,6 +8,7 @@ from typing import List, Tuple
 
 from Alfred3 import Items as Items
 from Alfred3 import Tools as Tools
+from avatar_generator import get_or_create_avatar
 
 
 def get_chromium_profiles(browser_path: str) -> List[Tuple[str, str, str]]:
@@ -30,7 +31,8 @@ def get_chromium_profiles(browser_path: str) -> List[Tuple[str, str, str]]:
             profile_info_cache = local_state.get("profile", {}).get("info_cache", {})
 
             for profile_dir, profile_data in profile_info_cache.items():
-                real_name = profile_data.get("user_name", profile_dir)
+                # Try 'name' field first, then 'user_name' - different Chromium browsers use different fields
+                real_name = profile_data.get("name") or profile_data.get("user_name") or profile_dir
 
                 # Get profile icon path
                 icon_path = None
@@ -41,6 +43,11 @@ def get_chromium_profiles(browser_path: str) -> List[Tuple[str, str, str]]:
                     )
                     if os.path.isfile(profile_picture_path):
                         icon_path = profile_picture_path
+
+                # Generate avatar if no profile picture
+                if not icon_path and real_name:
+                    cache_dir = Tools.getCacheDir()
+                    icon_path = get_or_create_avatar(real_name, profile_dir, cache_dir)
 
                 profiles.append((profile_dir, real_name, icon_path))
 
@@ -98,6 +105,7 @@ def get_all_browser_profiles() -> List[Tuple[str, str, str, str, str]]:
         ("vivaldi", "Vivaldi", "Vivaldi", "Library/Application Support/Vivaldi"),
         ("sidekick", "Sidekick", "Sidekick", "Library/Application Support/Sidekick"),
         ("dia", "Dia", "Dia", "Library/Application Support/Dia/User Data"),
+        ("comet", "Comet", "Comet", "Library/Application Support/Comet"),
     ]
 
     # Check each browser
