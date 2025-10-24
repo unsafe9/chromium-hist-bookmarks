@@ -626,6 +626,7 @@ The Workflow searches History, Bookmarks and Open Tabs of the configured Browser
 - Sidekick
 - Arc
 - Dia
+- Comet
 - Safari
 
 ## Requires 
@@ -997,6 +998,25 @@ Pressing `CMD` to enter `Other Actions...`:
 			<string>checkbox</string>
 			<key>variable</key>
 			<string>dia</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<false/>
+				<key>required</key>
+				<false/>
+				<key>text</key>
+				<string>Comet</string>
+			</dict>
+			<key>description</key>
+			<string></string>
+			<key>label</key>
+			<string></string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>comet</string>
 		</dict>
 		<dict>
 			<key>config</key>

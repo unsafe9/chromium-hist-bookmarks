@@ -25,6 +25,7 @@ BOOKMARKS_MAP = {
     "edge": "Library/Application Support/Microsoft Edge",
     "arc": "Library/Application Support/Arc/User Data",
     "dia": "Library/Application Support/Dia/User Data",
+    "comet": "Library/Application Support/Comet",
     "safari": "Library/Safari/Bookmarks.plist",
 }
 
@@ -213,6 +214,7 @@ def paths_to_bookmarks() -> list:
                                     "vivaldi",
                                     "arc",
                                     "dia",
+                                    "comet",
                                 ]:
                                     profile_name = get_real_profile_name(
                                         base_path, profile_dir_name
