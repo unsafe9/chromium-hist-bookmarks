@@ -168,13 +168,28 @@ def get_or_create_avatar(profile_name: str, profile_dir: str, cache_dir: str) ->
     Returns:
         str: Path to the avatar image PNG, or None if generation fails
     """
-    # Create a safe filename from profile_dir
-    safe_name = profile_dir.replace(" ", "_").replace("/", "_")
-    avatar_path_png = os.path.join(cache_dir, f"avatar_{safe_name}.png")
+    # Create a cache key that includes both profile_dir and profile_name hash
+    # This ensures avatar regenerates when profile name changes
+    name_hash = hashlib.md5(profile_name.encode()).hexdigest()[:8]
+    safe_dir = profile_dir.replace(" ", "_").replace("/", "_")
+    avatar_path_png = os.path.join(cache_dir, f"avatar_{safe_dir}_{name_hash}.png")
 
     # Check if avatar already exists
     if os.path.exists(avatar_path_png):
         return avatar_path_png
+
+    # Clean up old avatars for this profile_dir with different names
+    try:
+        import glob
+        old_avatars = glob.glob(os.path.join(cache_dir, f"avatar_{safe_dir}_*.png"))
+        for old_avatar in old_avatars:
+            if old_avatar != avatar_path_png:
+                try:
+                    os.remove(old_avatar)
+                except:
+                    pass
+    except:
+        pass
 
     # Generate avatar using PIL via subprocess
     try:
