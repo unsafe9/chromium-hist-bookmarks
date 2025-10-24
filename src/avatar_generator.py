@@ -56,17 +56,17 @@ def generate_avatar_svg(name: str, output_path: str, size: int = 256) -> str:
     # Font size relative to circle size
     font_size = int(size * 0.5)
 
-    # Create SVG content
+    # Create SVG content with transparent background
     svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg width="{size}" height="{size}" xmlns="http://www.w3.org/2000/svg">
     <circle cx="{size//2}" cy="{size//2}" r="{size//2}" fill="{bg_color}"/>
-    <text x="50%" y="50%"
+    <text x="{size//2}" y="{size//2}"
           font-family="Arial, Helvetica, sans-serif"
           font-size="{font_size}"
           font-weight="bold"
           fill="white"
           text-anchor="middle"
-          dominant-baseline="central">
+          dominant-baseline="middle">
         {letter}
     </text>
 </svg>'''
@@ -81,28 +81,11 @@ def generate_avatar_svg(name: str, output_path: str, size: int = 256) -> str:
     with open(svg_path, 'w') as f:
         f.write(svg_content)
 
-    # Convert SVG to PNG using qlmanage (available on macOS)
-    try:
-        # Use sips to convert (built-in macOS tool)
-        # First try with qlmanage to render SVG, then convert
-        subprocess.run(
-            ['qlmanage', '-t', '-s', str(size), '-o', output_dir, svg_path],
-            capture_output=True,
-            timeout=5
-        )
-
-        # qlmanage creates a .png file with the base name
-        ql_output = svg_path.replace('.svg', '.svg.png')
-        if os.path.exists(ql_output):
-            os.rename(ql_output, output_path)
-            os.remove(svg_path)
-            return output_path
-    except:
-        pass
-
-    # If conversion fails, just return the SVG path - Alfred can display SVGs
-    os.rename(svg_path, output_path.replace('.png', '.svg'))
-    return output_path.replace('.png', '.svg')
+    # Return SVG directly - Alfred supports SVG icons with transparency
+    svg_output = output_path.replace('.png', '.svg')
+    if svg_path != svg_output:
+        os.rename(svg_path, svg_output)
+    return svg_output
 
 
 def get_or_create_avatar(profile_name: str, profile_dir: str, cache_dir: str) -> str:
