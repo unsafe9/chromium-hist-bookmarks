@@ -200,6 +200,7 @@ def paths_to_bookmarks() -> list:
                                     "vivaldi",
                                     "arc",
                                     "dia",
+                                    "comet",
                                 ]:
                                     profile_name = get_real_profile_name(
                                         base_path, profile_dir_name

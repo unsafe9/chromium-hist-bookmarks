@@ -98,6 +98,7 @@ def get_all_browser_profiles() -> List[Tuple[str, str, str, str, str]]:
         ("vivaldi", "Vivaldi", "Vivaldi", "Library/Application Support/Vivaldi"),
         ("sidekick", "Sidekick", "Sidekick", "Library/Application Support/Sidekick"),
         ("dia", "Dia", "Dia", "Library/Application Support/Dia/User Data"),
+        ("comet", "Comet", "Comet", "Library/Application Support/Comet"),
     ]
 
     # Check each browser

@@ -172,6 +172,7 @@ def history_paths() -> list:
                                     "vivaldi",
                                     "arc",
                                     "dia",
+                                    "comet",
                                 ]:
                                     profile_name = get_real_profile_name_from_history(
                                         base_path, profile_dir_name
