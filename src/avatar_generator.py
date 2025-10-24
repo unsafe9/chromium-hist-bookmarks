@@ -5,20 +5,16 @@ Avatar generator module for browser profiles.
 
 Generates circular avatar images with the first letter of a profile name
 and a color background when no custom profile image is available.
+
+Uses SVG for cross-platform compatibility without external dependencies.
 """
 
 import hashlib
 import os
-
-# Try to import PIL, but make it optional
-try:
-    from PIL import Image, ImageDraw, ImageFont
-    PIL_AVAILABLE = True
-except ImportError:
-    PIL_AVAILABLE = False
+import subprocess
 
 
-def get_color_from_name(name: str) -> tuple:
+def get_color_from_name(name: str) -> str:
     """
     Generate a consistent color for a given name using hash.
 
@@ -26,7 +22,7 @@ def get_color_from_name(name: str) -> tuple:
         name (str): Profile name
 
     Returns:
-        tuple: RGB color tuple
+        str: Hex color string
     """
     # Use hash to generate consistent color for the same name
     hash_value = int(hashlib.md5(name.encode()).hexdigest()[:6], 16)
@@ -36,86 +32,77 @@ def get_color_from_name(name: str) -> tuple:
     g = (hash_value >> 8) % 180 + 50   # 50-230
     b = hash_value % 180 + 50           # 50-230
 
-    return (r, g, b)
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
-def generate_avatar(name: str, output_path: str, size: int = 256) -> str:
+def generate_avatar_svg(name: str, output_path: str, size: int = 256) -> str:
     """
-    Generate a circular avatar image with the first letter of the name.
+    Generate a circular avatar SVG with the first letter of the name.
 
     Args:
         name (str): Profile name
-        output_path (str): Path where to save the generated avatar
+        output_path (str): Path where to save the generated avatar (will be .png)
         size (int): Size of the avatar image in pixels (default 256)
 
     Returns:
-        str: Path to the generated avatar image, or None if PIL is not available
+        str: Path to the generated avatar PNG file
     """
-    if not PIL_AVAILABLE:
-        return None
-
-    # Create image with transparent background
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
     # Get color for this name
     bg_color = get_color_from_name(name)
-
-    # Draw circle
-    draw.ellipse([0, 0, size, size], fill=bg_color)
 
     # Get first letter (uppercase)
     letter = name[0].upper() if name else "?"
 
-    # Try to use a system font
+    # Font size relative to circle size
     font_size = int(size * 0.5)
-    try:
-        # Try different font paths for macOS
-        font_paths = [
-            "/System/Library/Fonts/Helvetica.ttc",
-            "/System/Library/Fonts/SFNSDisplay.ttf",
-            "/Library/Fonts/Arial.ttf",
-        ]
-        font = None
-        for font_path in font_paths:
-            if os.path.exists(font_path):
-                try:
-                    font = ImageFont.truetype(font_path, font_size)
-                    break
-                except:
-                    continue
 
-        if font is None:
-            # Fallback to default font
-            font = ImageFont.load_default()
-    except:
-        # Use default font if all else fails
-        font = ImageFont.load_default()
-
-    # Calculate text position to center it
-    # For default font, estimate position
-    if hasattr(font, 'getbbox'):
-        bbox = font.getbbox(letter)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-    else:
-        # Fallback for older PIL versions or default font
-        text_width = font_size * 0.6
-        text_height = font_size
-
-    text_x = (size - text_width) / 2
-    text_y = (size - text_height) / 2
-
-    # Draw text in white
-    draw.text((text_x, text_y), letter, fill=(255, 255, 255, 255), font=font)
+    # Create SVG content
+    svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg width="{size}" height="{size}" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="{size//2}" cy="{size//2}" r="{size//2}" fill="{bg_color}"/>
+    <text x="50%" y="50%"
+          font-family="Arial, Helvetica, sans-serif"
+          font-size="{font_size}"
+          font-weight="bold"
+          fill="white"
+          text-anchor="middle"
+          dominant-baseline="central">
+        {letter}
+    </text>
+</svg>'''
 
     # Ensure output directory exists
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    output_dir = os.path.dirname(output_path)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
 
-    # Save image
-    img.save(output_path, 'PNG')
+    # Save SVG temporarily
+    svg_path = output_path.replace('.png', '.svg')
+    with open(svg_path, 'w') as f:
+        f.write(svg_content)
 
-    return output_path
+    # Convert SVG to PNG using qlmanage (available on macOS)
+    try:
+        # Use sips to convert (built-in macOS tool)
+        # First try with qlmanage to render SVG, then convert
+        subprocess.run(
+            ['qlmanage', '-t', '-s', str(size), '-o', output_dir, svg_path],
+            capture_output=True,
+            timeout=5
+        )
+
+        # qlmanage creates a .png file with the base name
+        ql_output = svg_path.replace('.svg', '.svg.png')
+        if os.path.exists(ql_output):
+            os.rename(ql_output, output_path)
+            os.remove(svg_path)
+            return output_path
+    except:
+        pass
+
+    # If conversion fails, just return the SVG path - Alfred can display SVGs
+    os.rename(svg_path, output_path.replace('.png', '.svg'))
+    return output_path.replace('.png', '.svg')
 
 
 def get_or_create_avatar(profile_name: str, profile_dir: str, cache_dir: str) -> str:
@@ -128,19 +115,22 @@ def get_or_create_avatar(profile_name: str, profile_dir: str, cache_dir: str) ->
         cache_dir (str): Directory to cache generated avatars
 
     Returns:
-        str: Path to the avatar image, or None if PIL is not available or generation fails
+        str: Path to the avatar image (PNG or SVG), or None if generation fails
     """
-    if not PIL_AVAILABLE:
-        return None
-
     # Create a safe filename from profile_dir
     safe_name = profile_dir.replace(" ", "_").replace("/", "_")
-    avatar_path = os.path.join(cache_dir, f"avatar_{safe_name}.png")
+    avatar_path_png = os.path.join(cache_dir, f"avatar_{safe_name}.png")
+    avatar_path_svg = os.path.join(cache_dir, f"avatar_{safe_name}.svg")
 
-    # Generate avatar if it doesn't exist
-    if not os.path.exists(avatar_path):
-        result = generate_avatar(profile_name, avatar_path)
-        if result is None:
-            return None
+    # Check if avatar already exists (PNG or SVG)
+    if os.path.exists(avatar_path_png):
+        return avatar_path_png
+    if os.path.exists(avatar_path_svg):
+        return avatar_path_svg
 
-    return avatar_path if os.path.exists(avatar_path) else None
+    # Generate avatar
+    try:
+        result = generate_avatar_svg(profile_name, avatar_path_png)
+        return result if result and os.path.exists(result) else None
+    except Exception as e:
+        return None
