@@ -9,6 +9,7 @@ from typing import List, Tuple
 from Alfred3 import Items as Items
 from Alfred3 import Tools as Tools
 from Favicon import Icons
+from browsers import get_enabled_browsers, get_chromium_browsers
 
 # Show favicon in results or default wf icon
 show_favicon = Tools.getEnvBool("show_favicon")
@@ -189,43 +190,11 @@ def get_all_browser_tabs() -> List[Tuple[str, str, str, str, str, str]]:
     all_tabs = []
     user_dir = os.path.expanduser("~")
 
-    # Browser configurations: (env_var, app_name, display_name, browser_path)
-    chromium_browsers = [
-        (
-            "chrome",
-            "Google Chrome",
-            "Chrome",
-            "Library/Application Support/Google/Chrome",
-        ),
-        (
-            "brave",
-            "Brave Browser",
-            "Brave",
-            "Library/Application Support/BraveSoftware/Brave-Browser",
-        ),
-        (
-            "edge",
-            "Microsoft Edge",
-            "Edge",
-            "Library/Application Support/Microsoft Edge",
-        ),
-        ("arc", "Arc", "Arc", "Library/Application Support/Arc/User Data"),
-        ("chromium", "Chromium", "Chromium", "Library/Application Support/Chromium"),
-        (
-            "opera",
-            "Opera",
-            "Opera",
-            "Library/Application Support/com.operasoftware.Opera",
-        ),
-        ("vivaldi", "Vivaldi", "Vivaldi", "Library/Application Support/Vivaldi"),
-        ("sidekick", "Sidekick", "Sidekick", "Library/Application Support/Sidekick"),
-        ("dia", "Dia", "Dia", "Library/Application Support/Dia/User Data"),
-    ]
-
-    # Check Chromium-based browsers
-    for env_var, app_name, display_name, browser_path in chromium_browsers:
-        if Tools.getEnvBool(env_var):
-            profile_tabs = get_chromium_based_tabs(app_name, display_name)
+    # Check Chromium-based browsers using centralized config
+    enabled_browsers = get_enabled_browsers(Tools.getEnvBool)
+    for browser_key, config in enabled_browsers:
+        if config.is_chromium_based:
+            profile_tabs = get_chromium_based_tabs(config.app_name, config.display_name)
             # Add default profile info to each tab for now
             for title, url, browser_name, tab_id in profile_tabs:
                 all_tabs.append((title, url, browser_name, tab_id, "Default", None))
